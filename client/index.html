@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Socket.io Chat</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f2f2f2;
+        margin: 0;
+        padding: 0;
+      }
+
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #fff;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        border-radius: 5px;
+      }
+
+      .room {
+        margin-bottom: 40px;
+      }
+
+      .room h2 {
+        font-size: 24px;
+        margin-bottom: 10px;
+        color: #333;
+      }
+
+      .users {
+        margin-bottom: 10px;
+        font-size: 14px;
+        color: #777;
+      }
+
+      .users p {
+        margin: 5px 0;
+      }
+
+      .chat-container {
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        padding: 10px;
+        max-height: 300px;
+        overflow-y: auto;
+        background-color: #f9f9f9;
+      }
+
+      .chat-list {
+        list-style-type: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .chat-item {
+        margin-bottom: 10px;
+      }
+
+      .chat-item p {
+        margin: 0;
+      }
+
+      .chat-input {
+        margin-top: 10px;
+        display: flex;
+        align-items: center;
+      }
+
+      .chat-input input[type='text'] {
+        flex: 1;
+        padding: 8px;
+        border: none;
+        border-radius: 5px;
+        font-size: 14px;
+      }
+
+      .chat-input button {
+        padding: 8px 16px;
+        background-color: #4caf50;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        margin-left: 10px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      .chat-input button:hover {
+        background-color: #45a049;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Socket.io Chat</h1>
+      <div class="rooms">
+        <div class="room" id="room1">
+          <h2>Room 1</h2>
+          <div class="users" id="room1Users"></div>
+          <div class="chat-container">
+            <ul class="chat-list" id="room1-chat-list"></ul>
+          </div>
+          <div class="chat-input">
+            <input
+              type="text"
+              id="room1-messageInput"
+              placeholder="Type a message..."
+            />
+            <button onclick="sendRoomMessage('room1')">Send</button>
+          </div>
+          <button onclick="joinRoom('room1')">Join</button>
+          <button onclick="exitRoom('room1')">Exit</button>
+        </div>
+        <div class="room" id="room2">
+          <h2>Room 2</h2>
+          <div class="users" id="room2Users"></div>
+          <div class="chat-container">
+            <ul class="chat-list" id="room2-chat-list"></ul>
+          </div>
+          <div class="chat-input">
+            <input
+              type="text"
+              id="room2-messageInput"
+              placeholder="Type a message..."
+            />
+            <button onclick="sendRoomMessage('room2')">Send</button>
+          </div>
+          <button onclick="joinRoom('room2')">Join</button>
+          <button onclick="exitRoom('room2')">Exit</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.0/socket.io.js"></script>
+    <script>
+      const socket = io();
+
+      const animalNames = [
+        '곰',
+        '호랑이',
+        '사자',
+        '원숭이',
+        '기린',
+        '코끼리',
+        '여우',
+        '늑대',
+        '팬더',
+        '얼룩말',
+        '코뿔소',
+        '하마',
+        '고릴라',
+        '캥거루',
+        '악어',
+        '사슴',
+        '앵무새',
+        '치타',
+        '카멜레온',
+        '펭귄',
+      ];
+
+      const randomAnimalName =
+        animalNames[Math.floor(Math.random() * animalNames.length)] +
+        Math.floor(Math.random() * 100).toString();
+
+      socket.emit('setUserNick', randomAnimalName);
+
+      // Room 1
+      const room1Users = document.getElementById('room1Users');
+      const room1ChatList = document.getElementById('room1-chat-list');
+      const room1MessageInput = document.getElementById('room1-messageInput');
+
+      // Room 2
+      const room2Users = document.getElementById('room2Users');
+      const room2ChatList = document.getElementById('room2-chat-list');
+      const room2MessageInput = document.getElementById('room2-messageInput');
+
+      function joinRoom(room) {
+        socket.emit('join', room);
+      }
+
+      function exitRoom(room) {
+        if (room === 'room1') {
+          room1Users.innerHTML = '';
+          room1ChatList.innerHTML = '';
+        } else {
+          room2Users.innerHTML = '';
+          room2ChatList.innerHTML = '';
+        }
+        socket.emit('exit', room);
+      }
+
+      function sendRoomMessage(room) {
+        const message =
+          room === 'room1' ? room1MessageInput.value : room2MessageInput.value;
+        if (message.trim() !== '') {
+          socket.emit('chatMessage', { message, room });
+          if (room === 'room1') {
+            room1MessageInput.value = '';
+          } else {
+            room2MessageInput.value = '';
+          }
+        }
+      }
+
+      socket.on('userList', ({ room, userList }) => {
+        const usersElement = room === 'room1' ? room1Users : room2Users;
+        usersElement.innerHTML = '';
+        userList.forEach((userId) => {
+          const p = document.createElement('p');
+          p.textContent = userId;
+          usersElement.appendChild(p);
+        });
+      });
+
+      socket.on('userJoined', ({ userId, room }) => {
+        const message = `${userId} joined the room.`;
+        appendMessage(room, message);
+      });
+
+      socket.on('userLeft', ({ userId, room }) => {
+        const message = `${userId} left the room.`;
+        appendMessage(room, message);
+      });
+
+      socket.on('chatMessage', ({ userId, message, room }) => {
+        appendMessage(room, `${userId} : ${message}`);
+      });
+
+      function appendMessage(room, message) {
+        const chatList = room === 'room1' ? room1ChatList : room2ChatList;
+        const li = document.createElement('li');
+        li.className = 'chat-item';
+        const p = document.createElement('p');
+        p.textContent = message;
+        li.appendChild(p);
+        chatList.appendChild(li);
+      }
+    </script>
+  </body>
+</html>
