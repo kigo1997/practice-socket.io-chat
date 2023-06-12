@@ -14,7 +14,7 @@
             <button onclick="exitRoom('room1')">Exit</button>
           </div>
           <div class="users" id="room1Users"></div>
-          <div class="chat-container">
+          <div class="chat-container" id="room1-chat-container">
             <ul class="chat-list" id="room1-chat-list"></ul>
           </div>
           <div class="chat-input">
@@ -33,7 +33,7 @@
             <button onclick="exitRoom('room2')">Exit</button>
           </div>
           <div class="users" id="room2Users"></div>
-          <div class="chat-container">
+          <div class="chat-container" id="room2-chat-container">
             <ul class="chat-list" id="room2-chat-list"></ul>
           </div>
           <div class="chat-input">
@@ -81,48 +81,51 @@
 
       socket.emit('setUserNick', randomAnimalName);
 
-      // Room 1
-      const room1Users = document.getElementById('room1Users');
-      const room1ChatList = document.getElementById('room1-chat-list');
-      const room1MessageInput = document.getElementById('room1-messageInput');
+      const roomUsers = {
+        room1: document.getElementById('room1Users'),
+        room2: document.getElementById('room2Users'),
+      };
+      const roomChatList = {
+        room1: document.getElementById('room1-chat-list'),
+        room2: document.getElementById('room2-chat-list'),
+      };
+      const roomChatContainer = {
+        room1: document.getElementById('room1-chat-container'),
+        room2: document.getElementById('room2-chat-container'),
+      };
+      const roomMessageInput = {
+        room1: document.getElementById('room1-messageInput'),
+        room2: document.getElementById('room2-messageInput'),
+      };
 
-      // Room 2
-      const room2Users = document.getElementById('room2Users');
-      const room2ChatList = document.getElementById('room2-chat-list');
-      const room2MessageInput = document.getElementById('room2-messageInput');
+      const inputMessageRoom1 = document.getElementById('room1-messageInput');
+      const inputMessageRoom2 = document.getElementById('room2-messageInput');
 
       function joinRoom(room) {
         socket.emit('join', room);
       }
 
       function exitRoom(room) {
-        if (room === 'room1') {
-          room1Users.innerHTML = '';
-          room1ChatList.innerHTML = '';
-        } else {
-          room2Users.innerHTML = '';
-          room2ChatList.innerHTML = '';
-        }
+        if (!room) return;
+
+        roomUsers[room].innerHTML = '';
+        roomChatList[room].innerHTML = '';
         socket.emit('exit', room);
       }
 
       function sendRoomMessage(room) {
-        const message =
-          room === 'room1' ? room1MessageInput.value : room2MessageInput.value;
+        const message = roomMessageInput[room].value;
+
         if (message.trim() !== '') {
           socket.emit('chatMessage', { message, room });
-          if (room === 'room1') {
-            room1MessageInput.value = '';
-          } else {
-            room2MessageInput.value = '';
-          }
+          roomMessageInput[room].value = '';
         }
       }
 
       socket.on('userList', ({ room, userList }) => {
         if (!room) return;
 
-        const usersElement = room === 'room1' ? room1Users : room2Users;
+        const usersElement = roomUsers[room];
         usersElement.innerHTML = '';
 
         console.log({ room, userList });
@@ -148,14 +151,30 @@
       });
 
       function appendMessage(room, message) {
-        const chatList = room === 'room1' ? room1ChatList : room2ChatList;
+        const chatList = roomChatList[room];
         const li = document.createElement('li');
         li.className = 'chat-item';
         const p = document.createElement('p');
         p.textContent = message;
         li.appendChild(p);
         chatList.appendChild(li);
+
+        // 스크롤 아래로 이동
+        roomChatContainer[room].scrollTop =
+          roomChatContainer[room].scrollHeight;
       }
+
+      inputMessageRoom1.addEventListener('keyup', function (event) {
+        if (event.key === 'Enter') {
+          sendRoomMessage('room1');
+        }
+      });
+
+      inputMessageRoom2.addEventListener('keyup', function (event) {
+        if (event.key === 'Enter') {
+          sendRoomMessage('room2');
+        }
+      });
     </script>
   </body>
 </html>
