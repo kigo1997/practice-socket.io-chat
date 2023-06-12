@@ -85,14 +85,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       .to(room)
       .emit('userList', { room, userList: this.roomUsers[room] });
 
-    // 모든 방의 유저 목록을 업데이트하여 emit합니다.
-    Object.keys(this.roomUsers).forEach((room) => {
-      this.server
-        .to(room)
-        .emit('userList', { room, userList: this.roomUsers[room] });
-    });
-
-    // 연결된 클라이언트 목록을 업데이트하여 emit합니다.
     this.server.emit('userList', {
       room: null,
       userList: Object.keys(this.connectedClients),
