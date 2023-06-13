@@ -6,6 +6,7 @@
   <body>
     <div class="container">
       <h1>Socket.io Chat</h1>
+      <p>Your Nickname: <span id="random-animal-name"></span></p>
       <div class="rooms">
         <div class="room" id="room1">
           <h2>Room 1</h2>
@@ -78,6 +79,9 @@
       const randomAnimalName =
         animalNames[Math.floor(Math.random() * animalNames.length)] +
         Math.floor(Math.random() * 100).toString();
+
+      document.getElementById('random-animal-name').innerHTML =
+        randomAnimalName;
 
       socket.emit('setUserNick', randomAnimalName);
 
